@@ -1,7 +1,7 @@
 package com.elastic.init;
 
 import com.elastic.entity.Poetry;
-import com.elastic.repository.PostRepository;
+import com.elastic.repository.PoetryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
@@ -15,11 +15,11 @@ import java.util.List;
 public class Init {
 
     @Autowired
-    PostRepository postRepository;
+    PoetryRepository poetryRepository;
 
     @PostConstruct
     public void init() {
-        Iterable<Poetry> posts = postRepository.findAll(PageRequest.of(0, 20));
+        Iterable<Poetry> posts = poetryRepository.findAll(PageRequest.of(0, 20));
         if (posts.iterator().hasNext()) {
             return;
         }
@@ -40,12 +40,12 @@ public class Init {
             list.add(poetry);
             if (list.size() >= 10000) {
                 System.out.println("当前已经保存" + i + "笔资料");
-                postRepository.saveAll(list);
+                poetryRepository.saveAll(list);
                 list.clear();
             }
         }
         if (list.size() > 0) {
-            postRepository.saveAll(list);
+            poetryRepository.saveAll(list);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.elastic.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
@@ -8,7 +9,8 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 import java.util.Date;
 
 /**
- * 诗词
+ * 相关注解说明,请看
+ * https://docs.spring.io/spring-data/elasticsearch/docs/current/reference/html/#elasticsearch.mapping
  */
 @Document(indexName = "poetry", refreshInterval = "-1")
 public class Poetry {
@@ -36,7 +38,7 @@ public class Poetry {
     @Field(store = true, type = FieldType.Integer)
     private int weight;
 
-    @Field(store = true, type = FieldType.Date)
+    @Field(store = true, type = FieldType.Date, format = DateFormat.basic_date_time)
     private Date createTime;
 
     public String getId() {

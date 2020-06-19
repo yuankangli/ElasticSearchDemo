@@ -2,14 +2,16 @@ package com.elastic.controller;
 
 import com.elastic.entity.Poetry;
 import com.elastic.init.Init;
-import com.elastic.repository.PostRepository;
+import com.elastic.repository.PoetryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,11 +21,12 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 @RequestMapping("/es")
 public class EsController {
 
-	@Autowired
-	private ElasticsearchTemplate elasticsearchTemplate;
 
 	@Autowired
-	private PostRepository postRepository;
+	private ElasticsearchOperations elasticsearchOperations;
+
+	@Autowired
+	private PoetryRepository poetryRepository;
 
 	@Autowired
 	private Init init;
@@ -40,6 +43,22 @@ public class EsController {
 		System.out.println(info);
 		return info;
 	}
+
+	@PostMapping("/add")
+	public String save(@RequestBody Poetry poetry) {
+/*       // 两种方法都行, 下面更简单
+        IndexCoordinates indexCoordinates = elasticsearchOperations.getIndexCoordinatesFor(poetry.getClass());
+
+        IndexQuery indexQuery = new IndexQueryBuilder()
+                .withId(poetry.getId().toString())
+                .withObject(poetry)
+                .build();
+
+        return elasticsearchOperations.index(indexQuery, indexCoordinates);*/
+		Poetry save = poetryRepository.save(poetry);
+		return save.getId();
+	}
+
 
 	/**
 	 * 单字符串模糊查询，默认排序。将从所有字段中查找包含传来的word分词后字符串的数据集
@@ -60,9 +79,9 @@ public class EsController {
 	@RequestMapping("/singleWord")
 	public Object singleTitle(String word, @PageableDefault Pageable pageable) {
 		//使用queryStringQuery完成单字符串查询
-		SearchQuery searchQuery = new NativeSearchQueryBuilder()
+		NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
 				.withQuery(queryStringQuery(word)).withPageable(pageable).build();
-		return elasticsearchTemplate.queryForList(searchQuery, Poetry.class);
+		return elasticsearchOperations.search(searchQuery, Poetry.class);
 	}
 
 	/**
@@ -72,22 +91,27 @@ public class EsController {
 	@RequestMapping("/singleWord1")
 	public Object singlePost(String word, @PageableDefault(sort = "weight", direction = Sort.Direction.DESC) Pageable pageable) {
 		//使用queryStringQuery完成单字符串查询
-		SearchQuery searchQuery = new NativeSearchQueryBuilder()
+		NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
 				.withQuery(queryStringQuery(word)).withPageable(pageable).build();
-		return elasticsearchTemplate.queryForList(searchQuery, Poetry.class);
+		return elasticsearchOperations.search(searchQuery, Poetry.class);
 	}
 
 	/**
-	 * 单字段对某字符串模糊查询
+	 * 单字段对某字符串模糊查询, 只能对单个字段进行查询
 	 * http://localhost:8990/es/singleMatch?content=落日熔金&size=20
 	 * http://localhost:8990/es/singleMatch?userId=1&size=20
 	 */
 	@RequestMapping("/singleMatch")
 	public Object singleMatch(String content, Integer userId, @PageableDefault Pageable pageable) {
-		SearchQuery searchQuery = new NativeSearchQueryBuilder()
-				.withQuery(matchQuery("content", content))
-				.withQuery(matchQuery("userId", userId)).withPageable(pageable).build();
-		return elasticsearchTemplate.queryForList(searchQuery, Poetry.class);
+		NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
+		if (content != null) {
+			nativeSearchQueryBuilder.withQuery(matchQuery("content", content));
+		}
+		if (userId != null) {
+			nativeSearchQueryBuilder.withQuery(matchQuery("userId", userId));
+		}
+		NativeSearchQuery searchQuery = nativeSearchQueryBuilder.withPageable(pageable).build();
+		return elasticsearchOperations.search(searchQuery, Poetry.class);
 	}
 
 	/**
@@ -96,9 +120,9 @@ public class EsController {
 	 */
 	@RequestMapping("/singlePhraseMatch")
 	public Object singlePhraseMatch(String content, @PageableDefault Pageable pageable) {
-		SearchQuery searchQuery = new NativeSearchQueryBuilder()
+		NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
 				.withQuery(matchPhraseQuery("content", content)).withPageable(pageable).build();
-		return elasticsearchTemplate.queryForList(searchQuery, Poetry.class);
+		return elasticsearchOperations.search(searchQuery, Poetry.class);
 	}
 
 }
