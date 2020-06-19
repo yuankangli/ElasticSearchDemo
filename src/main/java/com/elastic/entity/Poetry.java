@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * 诗词
  */
-@Document(indexName = "poetry", refreshInterval = "-1")
+@Document(indexName = "poetry", type = "_doc", refreshInterval = "-1")
 public class Poetry {
 
     @Id
